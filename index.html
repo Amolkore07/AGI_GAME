@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGI ROBOT WARFARE - Open World Survival</title>
+    <meta name="description" content="An intense open-world 3D survival game where humanity fights back against rogue AGI robots in a post-apocalyptic cityscape.">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen">
+        <div class="loader-container">
+            <div class="loader-ring"></div>
+            <div class="loader-ring delay-1"></div>
+            <div class="loader-ring delay-2"></div>
+            <div class="loader-core"></div>
+        </div>
+        <h1 class="loader-title">AGI ROBOT WARFARE</h1>
+        <p class="loader-subtitle">INITIALIZING COMBAT SYSTEMS</p>
+        <div class="loader-bar-container">
+            <div class="loader-bar" id="loader-bar"></div>
+        </div>
+        <p class="loader-percent" id="loader-percent">0%</p>
+    </div>
+
+    <!-- START MENU -->
+    <div id="start-menu" style="display:none;">
+        <div class="menu-bg-overlay"></div>
+        <div class="menu-content">
+            <div class="menu-glitch-container">
+                <h1 class="menu-title glitch" data-text="AGI ROBOT WARFARE">AGI ROBOT WARFARE</h1>
+            </div>
+            <p class="menu-tagline">HUMANITY'S LAST STAND AGAINST THE MACHINES</p>
+            <div class="menu-divider"></div>
+            <div class="menu-buttons">
+                <button id="btn-start" class="menu-btn primary">
+                    <span class="btn-icon">⚔️</span> START MISSION
+                </button>
+                <button id="btn-controls" class="menu-btn">
+                    <span class="btn-icon">🎮</span> CONTROLS
+                </button>
+                <button id="btn-weapons" class="menu-btn">
+                    <span class="btn-icon">🔫</span> ARSENAL
+                </button>
+            </div>
+            <div class="menu-stats">
+                <div class="stat-item">
+                    <span class="stat-label">WORLD SIZE</span>
+                    <span class="stat-value">2KM²</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">ROBOT TYPES</span>
+                    <span class="stat-value">4</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">WEAPONS</span>
+                    <span class="stat-value">5</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">VEHICLES</span>
+                    <span class="stat-value">6</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">CREATURES</span>
+                    <span class="stat-value">3</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">COMPANION</span>
+                    <span class="stat-value">TARS</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Modal -->
+        <div id="controls-modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>COMBAT CONTROLS</h2>
+                <div class="controls-grid">
+                    <div class="control-item"><span class="key">W A S D</span> Move</div>
+                    <div class="control-item"><span class="key">MOUSE</span> Look Around</div>
+                    <div class="control-item"><span class="key">LEFT CLICK</span> Fire Weapon</div>
+                    <div class="control-item"><span class="key">R</span> Reload</div>
+                    <div class="control-item"><span class="key">1-5</span> Switch Weapons</div>
+                    <div class="control-item"><span class="key">SHIFT</span> Sprint</div>
+                    <div class="control-item"><span class="key">SPACE</span> Jump</div>
+                    <div class="control-item"><span class="key">E</span> Open Doors</div>
+                    <div class="control-item"><span class="key">G</span> Enter/Exit Vehicle/Plane</div>
+                    <div class="control-item"><span class="key">T</span> Summon TARS</div>
+                    <div class="control-item"><span class="key">O</span> Toggle Day/Night</div>
+                    <div class="control-item"><span class="key">ESC</span> Pause</div>
+                    <div class="control-item"><span class="key">F</span> Flashlight</div>
+                    <div class="control-item" style="grid-column: span 2; margin-top: 10px; color: #aaa;"><b>Plane Controls:</b> W (Thrust), Space (Brake), A/D (Roll), Arrow Up/Down (Pitch)</div>
+                </div>
+                <button class="menu-btn modal-close" onclick="document.getElementById('controls-modal').style.display='none'">CLOSE</button>
+            </div>
+        </div>
+
+        <!-- Weapons Modal -->
+        <div id="weapons-modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>WEAPON ARSENAL</h2>
+                <div class="weapons-list">
+                    <div class="weapon-card">
+                        <div class="weapon-icon">🔫</div>
+                        <div class="weapon-info">
+                            <h3>PLASMA PISTOL</h3>
+                            <p>Standard sidearm. Infinite ammo, moderate damage.</p>
+                            <div class="weapon-stats">
+                                <div class="wstat"><span>DMG</span><div class="wbar"><div style="width:40%"></div></div></div>
+                                <div class="wstat"><span>ROF</span><div class="wbar"><div style="width:70%"></div></div></div>
+                                <div class="wstat"><span>RNG</span><div class="wbar"><div style="width:60%"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="weapon-card">
+                        <div class="weapon-icon">⚡</div>
+                        <div class="weapon-info">
+                            <h3>RAIL GUN</h3>
+                            <p>High-powered electromagnetic cannon. Devastating single shots.</p>
+                            <div class="weapon-stats">
+                                <div class="wstat"><span>DMG</span><div class="wbar"><div style="width:95%"></div></div></div>
+                                <div class="wstat"><span>ROF</span><div class="wbar"><div style="width:20%"></div></div></div>
+                                <div class="wstat"><span>RNG</span><div class="wbar"><div style="width:90%"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="weapon-card">
+                        <div class="weapon-icon">🔥</div>
+                        <div class="weapon-info">
+                            <h3>FLAME THROWER</h3>
+                            <p>Short-range area denial. Melts robot armor.</p>
+                            <div class="weapon-stats">
+                                <div class="wstat"><span>DMG</span><div class="wbar"><div style="width:70%"></div></div></div>
+                                <div class="wstat"><span>ROF</span><div class="wbar"><div style="width:95%"></div></div></div>
+                                <div class="wstat"><span>RNG</span><div class="wbar"><div style="width:25%"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="weapon-card">
+                        <div class="weapon-icon">🚀</div>
+                        <div class="weapon-info">
+                            <h3>ROCKET LAUNCHER</h3>
+                            <p>Explosive ordnance. Massive area damage.</p>
+                            <div class="weapon-stats">
+                                <div class="wstat"><span>DMG</span><div class="wbar"><div style="width:100%"></div></div></div>
+                                <div class="wstat"><span>ROF</span><div class="wbar"><div style="width:15%"></div></div></div>
+                                <div class="wstat"><span>RNG</span><div class="wbar"><div style="width:70%"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="weapon-card">
+                        <div class="weapon-icon">💀</div>
+                        <div class="weapon-info">
+                            <h3>EMP CANNON</h3>
+                            <p>Disables robot electronics. Chain effect on nearby bots.</p>
+                            <div class="weapon-stats">
+                                <div class="wstat"><span>DMG</span><div class="wbar"><div style="width:60%"></div></div></div>
+                                <div class="wstat"><span>ROF</span><div class="wbar"><div style="width:30%"></div></div></div>
+                                <div class="wstat"><span>RNG</span><div class="wbar"><div style="width:80%"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="menu-btn modal-close" onclick="document.getElementById('weapons-modal').style.display='none'">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME HUD -->
+    <div id="game-hud" style="display:none;">
+        <!-- Crosshair -->
+        <div id="crosshair">
+            <div class="ch-line ch-top"></div>
+            <div class="ch-line ch-bottom"></div>
+            <div class="ch-line ch-left"></div>
+            <div class="ch-line ch-right"></div>
+            <div class="ch-dot"></div>
+        </div>
+
+        <!-- Health Bar -->
+        <div id="health-container" class="hud-element">
+            <div class="hud-label">HEALTH</div>
+            <div class="hud-bar">
+                <div id="health-bar" class="hud-bar-fill health-fill"></div>
+            </div>
+            <span id="health-text" class="hud-value">100</span>
+        </div>
+
+        <!-- Shield Bar -->
+        <div id="shield-container" class="hud-element">
+            <div class="hud-label">SHIELD</div>
+            <div class="hud-bar">
+                <div id="shield-bar" class="hud-bar-fill shield-fill"></div>
+            </div>
+            <span id="shield-text" class="hud-value">100</span>
+        </div>
+
+        <!-- Weapon Info -->
+        <div id="weapon-container" class="hud-element">
+            <div id="weapon-name" class="weapon-name">PLASMA PISTOL</div>
+            <div id="ammo-display" class="ammo-display">
+                <span id="ammo-current">∞</span> / <span id="ammo-max">∞</span>
+            </div>
+        </div>
+
+        <!-- Score -->
+        <div id="score-container" class="hud-element">
+            <div class="hud-label">SCORE</div>
+            <span id="score-text" class="score-value">0</span>
+        </div>
+
+        <!-- Kill Counter -->
+        <div id="kills-container" class="hud-element">
+            <div class="hud-label">ROBOTS DESTROYED</div>
+            <span id="kills-text" class="kills-value">0</span>
+        </div>
+
+        <!-- Wave Info -->
+        <div id="wave-container" class="hud-element">
+            <div class="hud-label">WAVE</div>
+            <span id="wave-text" class="wave-value">1</span>
+        </div>
+
+        <!-- Minimap -->
+        <div id="minimap-container">
+            <canvas id="minimap" width="180" height="180"></canvas>
+            <div class="minimap-border"></div>
+        </div>
+
+        <!-- Weapon Slots -->
+        <div id="weapon-slots">
+            <div class="weapon-slot active" data-slot="1">
+                <span class="slot-num">1</span>
+                <span class="slot-icon">🔫</span>
+            </div>
+            <div class="weapon-slot" data-slot="2">
+                <span class="slot-num">2</span>
+                <span class="slot-icon">⚡</span>
+            </div>
+            <div class="weapon-slot" data-slot="3">
+                <span class="slot-num">3</span>
+                <span class="slot-icon">🔥</span>
+            </div>
+            <div class="weapon-slot" data-slot="4">
+                <span class="slot-num">4</span>
+                <span class="slot-icon">🚀</span>
+            </div>
+            <div class="weapon-slot" data-slot="5">
+                <span class="slot-num">5</span>
+                <span class="slot-icon">💀</span>
+            </div>
+        </div>
+
+        <!-- Damage Indicator -->
+        <div id="damage-overlay"></div>
+
+        <!-- Kill Feed -->
+        <div id="kill-feed"></div>
+
+        <!-- Wave Announcement -->
+        <div id="wave-announce" style="display:none;">
+            <h2>WAVE <span id="wave-announce-num">1</span></h2>
+            <p>INCOMING HOSTILE ROBOTS</p>
+        </div>
+
+        <!-- Vehicle Prompt -->
+        <div id="vehicle-prompt" style="display:none;">
+            <span class="key" style="font-family:Share Tech Mono;padding:4px 10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:3px;color:#ffaa00;margin-right:8px;">G</span> Enter Vehicle
+        </div>
+
+        <!-- TARS Message -->
+        <div id="tars-message" style="display:none;"></div>
+    </div>
+
+    <!-- PAUSE MENU -->
+    <div id="pause-menu" style="display:none;">
+        <div class="pause-overlay"></div>
+        <div class="pause-content">
+            <h2>MISSION PAUSED</h2>
+            <button id="btn-resume" class="menu-btn">RESUME</button>
+            <button id="btn-quit" class="menu-btn">QUIT TO MENU</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="game-over" style="display:none;">
+        <div class="gameover-overlay"></div>
+        <div class="gameover-content">
+            <h1 class="gameover-title glitch" data-text="MISSION FAILED">MISSION FAILED</h1>
+            <p class="gameover-subtitle">THE MACHINES HAVE WON... THIS TIME</p>
+            <div class="gameover-stats">
+                <div class="go-stat">
+                    <span class="go-label">SCORE</span>
+                    <span id="go-score" class="go-value">0</span>
+                </div>
+                <div class="go-stat">
+                    <span class="go-label">ROBOTS DESTROYED</span>
+                    <span id="go-kills" class="go-value">0</span>
+                </div>
+                <div class="go-stat">
+                    <span class="go-label">WAVE REACHED</span>
+                    <span id="go-wave" class="go-value">1</span>
+                </div>
+                <div class="go-stat">
+                    <span class="go-label">TIME SURVIVED</span>
+                    <span id="go-time" class="go-value">0:00</span>
+                </div>
+            </div>
+            <button id="btn-retry" class="menu-btn primary">RETRY MISSION</button>
+            <button id="btn-menu" class="menu-btn">MAIN MENU</button>
+        </div>
+    </div>
+
+    <!-- THREE.JS + GAME SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/textures.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/weapons.js"></script>
+    <script src="js/robots.js"></script>
+    <script src="js/interiors.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/vehicles.js"></script>
+    <script src="js/creatures.js"></script>
+    <script src="js/tars.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
