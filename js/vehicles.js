@@ -619,12 +619,16 @@ class VehicleManager {
 
     spawnVehicles() {
         const positions = [
-            new THREE.Vector3(20, 0, 15),
-            new THREE.Vector3(-30, 0, -20),
-            new THREE.Vector3(50, 0, 40),
-            new THREE.Vector3(-60, 0, 50),
-            new THREE.Vector3(40, 0, -60),
-            new THREE.Vector3(-20, 0, 70)
+            new THREE.Vector3(  20,  0,   15),
+            new THREE.Vector3( -80,  0,  -60),
+            new THREE.Vector3( 150,  0,  120),
+            new THREE.Vector3(-200,  0,  180),
+            new THREE.Vector3( 250,  0, -160),
+            new THREE.Vector3(-120,  0,  240),
+            new THREE.Vector3( 320,  0,  -80),
+            new THREE.Vector3(-280,  0, -220),
+            new THREE.Vector3( 180,  0,  350),
+            new THREE.Vector3(-350,  0,  120),
         ];
 
         for (const pos of positions) {
@@ -632,13 +636,15 @@ class VehicleManager {
             car.mesh.rotation.y = Math.random() * Math.PI * 2;
             this.vehicles.push(car);
         }
-        
-        // Spawn planes
+
+        // Planes spread across the expanded world
         const planePositions = [
-            new THREE.Vector3(-40, 0, 20),
-            new THREE.Vector3(60, 0, -30)
+            new THREE.Vector3( -80,  0,   60),
+            new THREE.Vector3( 200,  0, -120),
+            new THREE.Vector3(-300,  0,  300),
+            new THREE.Vector3( 400,  0,  200),
         ];
-        
+
         for (const pos of planePositions) {
             const plane = new DrivablePlane(pos, this.scene);
             plane.mesh.rotation.y = Math.random() * Math.PI * 2;

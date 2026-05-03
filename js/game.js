@@ -174,7 +174,7 @@ class Game {
 
     setupCamera() {
         this.camera = new THREE.PerspectiveCamera(
-            70, window.innerWidth / window.innerHeight, 0.5, 400
+            70, window.innerWidth / window.innerHeight, 0.5, 1200
         );
         this.camera.position.copy(this.player.position);
         this.scene.add(this.camera);
@@ -613,7 +613,7 @@ class Game {
         }
 
         // World bounds (keep away from ocean)
-        const halfWorld = this.worldGenerator.worldSize / 2 - 5;
+        const halfWorld = this.worldGenerator.worldSize / 2 - 10;
         this.player.position.x = Math.max(-halfWorld, Math.min(halfWorld, this.player.position.x));
         this.player.position.z = Math.max(-halfWorld, Math.min(halfWorld, this.player.position.z));
 

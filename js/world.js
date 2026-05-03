@@ -7,7 +7,7 @@
 class WorldGenerator {
     constructor(scene) {
         this.scene = scene;
-        this.worldSize = 800;
+        this.worldSize = 2000;
         this.buildings = [];
         this.pickups = [];
         this.doors = [];           // Interactive doors
@@ -23,8 +23,10 @@ class WorldGenerator {
         this.createSun();
         this.createGround();
         this.createLighting();
-        this.createBuildings();
         this.createRoads();
+        this.createRivers();
+        this.createBuildings();
+        this.createSkyscrapers();
         this.createCars();
         this.createDecorations();
         this.createOcean();
@@ -200,31 +202,36 @@ class WorldGenerator {
         const destroyedTex = TextureGen.destroyedWallTexture();
 
         let enterableCount = 0;
+        const GRID = 18;   // -18..18 cells
+        const CELL = 60;   // spacing between buildings
 
-        // Reduced building count for performance
-        for (let gx = -7; gx <= 7; gx++) {
-            for (let gz = -7; gz <= 7; gz++) {
+        for (let gx = -GRID; gx <= GRID; gx++) {
+            for (let gz = -GRID; gz <= GRID; gz++) {
+                // Clear center plaza
                 if (Math.abs(gx) <= 1 && Math.abs(gz) <= 1) continue;
-                if (Math.random() > 0.55) continue;
+                // Skip river corridors
+                if (Math.abs(gz) === 5 || Math.abs(gx) === 5) continue;
+                if (Math.random() > 0.60) continue;
 
-                const x = gx * 50 + (Math.random() - 0.5) * 12;
-                const z = gz * 50 + (Math.random() - 0.5) * 12;
-                const w = 8 + Math.random() * 12;
-                const h = 10 + Math.random() * 25;
-                const d = 8 + Math.random() * 12;
-                const destroyed = Math.random() > 0.45;
-                // ~30% of intact buildings are enterable with interiors
-                const enterable = !destroyed && enterableCount < 6 && Math.random() > 0.5;
+                const x = gx * CELL + (Math.random() - 0.5) * 14;
+                const z = gz * CELL + (Math.random() - 0.5) * 14;
+                const w = 9 + Math.random() * 14;
+                const h = 8 + Math.random() * 30;
+                const d = 9 + Math.random() * 14;
+                const destroyed = Math.random() > 0.55;
+                const enterable = !destroyed && enterableCount < 12 && Math.random() > 0.6;
                 if (enterable) enterableCount++;
 
                 this.createBuilding({ x, z, w, h, d, destroyed, enterable }, wallTex, destroyedTex);
             }
         }
 
-        // Add special buildings
-        this.createCafe(new THREE.Vector3(120, 0, -120), new THREE.Group());
-        this.createSportsGround(new THREE.Vector3(-150, 0, 100), new THREE.Group());
-        this.createSwimmingPool(new THREE.Vector3(100, 0, 150), new THREE.Group());
+        // Special landmarks spread across larger world
+        this.createCafe(new THREE.Vector3(180, 0, -180), new THREE.Group());
+        this.createSportsGround(new THREE.Vector3(-280, 0, 160), new THREE.Group());
+        this.createSwimmingPool(new THREE.Vector3(220, 0, 260), new THREE.Group());
+        this.createCafe(new THREE.Vector3(-380, 0, 300), new THREE.Group());
+        this.createSportsGround(new THREE.Vector3(400, 0, -350), new THREE.Group());
     }
 
     // CAFE - A commercial building with nice geometry
@@ -772,73 +779,305 @@ class WorldGenerator {
 
     createRoads() {
         const roadTex = TextureGen.concreteRoadTexture();
+        const W = this.worldSize * 0.92;
 
-        // Main concrete roads
+        // Main arteries + city grid every 60 units
         const roads = [
-            { x: 0, z: 0, w: this.worldSize * 0.9, d: 14 },
-            { x: 0, z: 0, w: 14, d: this.worldSize * 0.9 },
-            { x: 90, z: 0, w: 10, d: this.worldSize * 0.6 },
-            { x: -90, z: 0, w: 10, d: this.worldSize * 0.6 },
-            { x: 0, z: 90, w: this.worldSize * 0.6, d: 10 },
-            { x: 0, z: -90, w: this.worldSize * 0.6, d: 10 },
+            // Main cross arteries
+            { x: 0,    z: 0,    w: W,   d: 18 },
+            { x: 0,    z: 0,    w: 18,  d: W  },
+            // Secondary grid — horizontal
+            { x: 0, z:  120, w: W * 0.85, d: 12 },
+            { x: 0, z: -120, w: W * 0.85, d: 12 },
+            { x: 0, z:  240, w: W * 0.75, d: 12 },
+            { x: 0, z: -240, w: W * 0.75, d: 12 },
+            { x: 0, z:  360, w: W * 0.65, d: 10 },
+            { x: 0, z: -360, w: W * 0.65, d: 10 },
+            { x: 0, z:  480, w: W * 0.55, d: 10 },
+            { x: 0, z: -480, w: W * 0.55, d: 10 },
+            { x: 0, z:  600, w: W * 0.45, d: 10 },
+            { x: 0, z: -600, w: W * 0.45, d: 10 },
+            // Secondary grid — vertical
+            { x:  120, z: 0, w: 12, d: W * 0.85 },
+            { x: -120, z: 0, w: 12, d: W * 0.85 },
+            { x:  240, z: 0, w: 12, d: W * 0.75 },
+            { x: -240, z: 0, w: 12, d: W * 0.75 },
+            { x:  360, z: 0, w: 10, d: W * 0.65 },
+            { x: -360, z: 0, w: 10, d: W * 0.65 },
+            { x:  480, z: 0, w: 10, d: W * 0.55 },
+            { x: -480, z: 0, w: 10, d: W * 0.55 },
+            { x:  600, z: 0, w: 10, d: W * 0.45 },
+            { x: -600, z: 0, w: 10, d: W * 0.45 },
+            // Diagonal boulevards (angled 45°)
+            { x:  200, z:  200, w: W * 0.4, d: 10 },
+            { x: -200, z: -200, w: W * 0.4, d: 10 },
         ];
 
+        const curbMat = new THREE.MeshLambertMaterial({ color: 0x999990 });
         for (const road of roads) {
             const geo = new THREE.PlaneGeometry(road.w, road.d);
             const tex = roadTex.clone();
             tex.repeat.set(road.w / 14, road.d / 14);
-
-            const mat = new THREE.MeshLambertMaterial({
-                map: tex,
-                color: 0xaaaaaa
-            });
-
+            const mat = new THREE.MeshLambertMaterial({ map: tex, color: 0xaaaaaa });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.rotation.x = -Math.PI / 2;
             mesh.position.set(road.x, 0.02, road.z);
             this.scene.add(mesh);
 
-            // Sidewalk edges (raised concrete)
+            // Curbs
             if (road.w > road.d) {
-                // Horizontal road - add curbs
-                const curbGeo = new THREE.BoxGeometry(road.w, 0.25, 0.4);
-                const curbMat = new THREE.MeshLambertMaterial({ color: 0x999990 });
-                const curbN = new THREE.Mesh(curbGeo, curbMat);
-                curbN.position.set(road.x, 0.12, road.z - road.d / 2 - 0.2);
-                this.scene.add(curbN);
-                const curbS = new THREE.Mesh(curbGeo, curbMat.clone());
-                curbS.position.set(road.x, 0.12, road.z + road.d / 2 + 0.2);
-                this.scene.add(curbS);
+                const cg = new THREE.BoxGeometry(road.w, 0.25, 0.4);
+                const cN = new THREE.Mesh(cg, curbMat.clone());
+                cN.position.set(road.x, 0.12, road.z - road.d / 2 - 0.2);
+                this.scene.add(cN);
+                const cS = cN.clone();
+                cS.position.z = road.z + road.d / 2 + 0.2;
+                this.scene.add(cS);
             } else {
-                const curbGeo = new THREE.BoxGeometry(0.4, 0.25, road.d);
-                const curbMat = new THREE.MeshLambertMaterial({ color: 0x999990 });
-                const curbE = new THREE.Mesh(curbGeo, curbMat);
-                curbE.position.set(road.x - road.w / 2 - 0.2, 0.12, road.z);
-                this.scene.add(curbE);
-                const curbW = new THREE.Mesh(curbGeo, curbMat.clone());
-                curbW.position.set(road.x + road.w / 2 + 0.2, 0.12, road.z);
-                this.scene.add(curbW);
+                const cg = new THREE.BoxGeometry(0.4, 0.25, road.d);
+                const cE = new THREE.Mesh(cg, curbMat.clone());
+                cE.position.set(road.x - road.w / 2 - 0.2, 0.12, road.z);
+                this.scene.add(cE);
+                const cW = cE.clone();
+                cW.position.x = road.x + road.w / 2 + 0.2;
+                this.scene.add(cW);
+            }
+        }
+    }
+
+    createRivers() {
+        const riverMat = new THREE.MeshLambertMaterial({
+            color: 0x1a4a8a, transparent: true, opacity: 0.82
+        });
+        const bridgeMat = new THREE.MeshLambertMaterial({ color: 0x888880 });
+        const W = this.worldSize * 0.88;
+        const riverW = 28;
+        const riverDepth = 0.6;
+
+        // Two rivers: one horizontal (Z axis), one vertical (X axis)
+        const rivers = [
+            { axis: 'z', offset:  300 },
+            { axis: 'z', offset: -300 },
+            { axis: 'x', offset:  300 },
+            { axis: 'x', offset: -300 },
+        ];
+
+        for (const r of rivers) {
+            // River bed (slightly below ground)
+            const bedGeo = r.axis === 'z'
+                ? new THREE.BoxGeometry(W, riverDepth, riverW)
+                : new THREE.BoxGeometry(riverW, riverDepth, W);
+            const bed = new THREE.Mesh(bedGeo, new THREE.MeshLambertMaterial({ color: 0x334455 }));
+            bed.position.set(
+                r.axis === 'x' ? r.offset : 0,
+                -riverDepth / 2 - 0.1,
+                r.axis === 'z' ? r.offset : 0
+            );
+            this.scene.add(bed);
+
+            // Water surface
+            const waterGeo = r.axis === 'z'
+                ? new THREE.PlaneGeometry(W, riverW)
+                : new THREE.PlaneGeometry(riverW, W);
+            const water = new THREE.Mesh(waterGeo, riverMat.clone());
+            water.rotation.x = -Math.PI / 2;
+            water.position.set(
+                r.axis === 'x' ? r.offset : 0,
+                0.05,
+                r.axis === 'z' ? r.offset : 0
+            );
+            this.scene.add(water);
+            if (!this.rivers) this.rivers = [];
+            this.rivers.push(water);
+
+            // Concrete embankments
+            for (const side of [-1, 1]) {
+                const embankGeo = r.axis === 'z'
+                    ? new THREE.BoxGeometry(W, 1.2, 3)
+                    : new THREE.BoxGeometry(3, 1.2, W);
+                const embank = new THREE.Mesh(embankGeo, bridgeMat.clone());
+                const off = riverW / 2 + 1.5;
+                embank.position.set(
+                    r.axis === 'x' ? r.offset : (r.axis === 'z' ? 0 : side * off),
+                    0.4,
+                    r.axis === 'z' ? r.offset + side * off : 0
+                );
+                if (r.axis === 'x') {
+                    embank.position.x = r.offset;
+                    embank.position.z = side * off;
+                }
+                this.scene.add(embank);
+            }
+
+            // Bridges where main roads cross
+            const crossings = [-480, -240, 0, 240, 480];
+            for (const cx of crossings) {
+                const bridgeGeo = r.axis === 'z'
+                    ? new THREE.BoxGeometry(18, 0.8, riverW + 4)
+                    : new THREE.BoxGeometry(riverW + 4, 0.8, 18);
+                const bridge = new THREE.Mesh(bridgeGeo, bridgeMat.clone());
+                bridge.position.set(
+                    r.axis === 'z' ? cx : r.offset,
+                    0.5,
+                    r.axis === 'z' ? r.offset : cx
+                );
+                this.scene.add(bridge);
+
+                // Bridge railings
+                for (const side of [-1, 1]) {
+                    const railGeo = r.axis === 'z'
+                        ? new THREE.BoxGeometry(18, 1.2, 0.3)
+                        : new THREE.BoxGeometry(0.3, 1.2, 18);
+                    const rail = new THREE.Mesh(railGeo, new THREE.MeshLambertMaterial({ color: 0x777770 }));
+                    rail.position.set(
+                        r.axis === 'z' ? cx : r.offset,
+                        1.1,
+                        r.axis === 'z' ? r.offset + side * (riverW / 2 + 2) : cx + side * (riverW / 2 + 2)
+                    );
+                    if (r.axis === 'x') {
+                        rail.position.x = r.offset + side * (riverW / 2 + 2);
+                        rail.position.z = cx;
+                    }
+                    this.scene.add(rail);
+                }
+            }
+        }
+    }
+
+    createSkyscrapers() {
+        // Downtown cluster near center and secondary districts
+        const districts = [
+            { cx:   0, cz:   0, count: 10, minH: 80,  maxH: 220 }, // CBD
+            { cx: 300, cz: 300, count:  7, minH: 50,  maxH: 140 },
+            { cx:-300, cz: 300, count:  6, minH: 45,  maxH: 120 },
+            { cx: 300, cz:-300, count:  6, minH: 45,  maxH: 120 },
+            { cx:-300, cz:-300, count:  5, minH: 40,  maxH: 100 },
+        ];
+
+        const glassMats = [
+            new THREE.MeshLambertMaterial({ color: 0x223355 }),
+            new THREE.MeshLambertMaterial({ color: 0x334422 }),
+            new THREE.MeshLambertMaterial({ color: 0x442233 }),
+            new THREE.MeshLambertMaterial({ color: 0x334455 }),
+            new THREE.MeshLambertMaterial({ color: 0x555533 }),
+        ];
+        const concreteMat = new THREE.MeshLambertMaterial({ color: 0x666660 });
+
+        for (const d of districts) {
+            for (let i = 0; i < d.count; i++) {
+                const x = d.cx + (Math.random() - 0.5) * 160;
+                const z = d.cz + (Math.random() - 0.5) * 160;
+                // Skip river zones
+                if (Math.abs(z - 300) < 20 || Math.abs(z + 300) < 20) continue;
+                if (Math.abs(x - 300) < 20 || Math.abs(x + 300) < 20) continue;
+
+                const w = 14 + Math.random() * 20;
+                const dep = 14 + Math.random() * 20;
+                const h = d.minH + Math.random() * (d.maxH - d.minH);
+                const mat = glassMats[Math.floor(Math.random() * glassMats.length)].clone();
+
+                const group = new THREE.Group();
+
+                // Main tower body
+                const towerGeo = new THREE.BoxGeometry(w, h, dep);
+                const tower = new THREE.Mesh(towerGeo, mat);
+                tower.position.y = h / 2;
+                group.add(tower);
+
+                // Setback upper section
+                const topW = w * 0.65;
+                const topD = dep * 0.65;
+                const topH = h * 0.25;
+                const topGeo = new THREE.BoxGeometry(topW, topH, topD);
+                const top = new THREE.Mesh(topGeo, mat.clone());
+                top.position.y = h + topH / 2;
+                group.add(top);
+
+                // Antenna spire
+                const spireGeo = new THREE.CylinderGeometry(0.3, 0.8, h * 0.1, 6);
+                const spire = new THREE.Mesh(spireGeo, concreteMat.clone());
+                spire.position.y = h + topH + h * 0.05;
+                group.add(spire);
+
+                // Window grid (emissive planes)
+                const winMat = new THREE.MeshBasicMaterial({ color: 0xffcc66, transparent: true, opacity: 0.75 });
+                const winGeo = new THREE.PlaneGeometry(1.5, 2);
+                for (let wy = 4; wy < h - 3; wy += 5) {
+                    for (let wx = -w / 2 + 2.5; wx < w / 2 - 1.5; wx += 4) {
+                        if (Math.random() > 0.6) {
+                            const wf = new THREE.Mesh(winGeo, winMat);
+                            wf.position.set(wx, wy, dep / 2 + 0.05);
+                            group.add(wf);
+                            const wb = wf.clone();
+                            wb.position.z = -dep / 2 - 0.05;
+                            wb.rotation.y = Math.PI;
+                            group.add(wb);
+                        }
+                    }
+                }
+
+                // Podium base
+                const podGeo = new THREE.BoxGeometry(w + 6, 4, dep + 6);
+                const pod = new THREE.Mesh(podGeo, concreteMat.clone());
+                pod.position.y = 2;
+                group.add(pod);
+
+                // Warning light on tip
+                const warnLight = new THREE.PointLight(0xff2200, 1.5, 30);
+                warnLight.position.y = h + topH + h * 0.11;
+                group.add(warnLight);
+
+                group.position.set(x, 0, z);
+                group.userData.size = { x: (w + 6) / 2 + 1, z: (dep + 6) / 2 + 1 };
+                this.scene.add(group);
+                this.buildings.push(group);
             }
         }
     }
 
     createDecorations() {
-        // Street lights (fewer, no setInterval)
-        for (let i = 0; i < 15; i++) {
+        // Many more street lights across the bigger world
+        for (let i = 0; i < 80; i++) {
             this.createStreetLight(new THREE.Vector3(
-                (Math.random() - 0.5) * this.worldSize * 0.5,
+                (Math.random() - 0.5) * this.worldSize * 0.8,
                 0,
-                (Math.random() - 0.5) * this.worldSize * 0.5
+                (Math.random() - 0.5) * this.worldSize * 0.8
             ));
         }
 
         // Barricades
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 30; i++) {
             this.createBarricade(new THREE.Vector3(
-                (Math.random() - 0.5) * this.worldSize * 0.5,
+                (Math.random() - 0.5) * this.worldSize * 0.7,
                 0,
-                (Math.random() - 0.5) * this.worldSize * 0.5
+                (Math.random() - 0.5) * this.worldSize * 0.7
             ));
+        }
+
+        // Park trees (simple cylinders + spheres)
+        const trunkMat = new THREE.MeshLambertMaterial({ color: 0x4a3010 });
+        const leafMat  = new THREE.MeshLambertMaterial({ color: 0x2a6a1a });
+        for (let i = 0; i < 200; i++) {
+            const tx = (Math.random() - 0.5) * this.worldSize * 0.85;
+            const tz = (Math.random() - 0.5) * this.worldSize * 0.85;
+            const th = 4 + Math.random() * 5;
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, th, 6), trunkMat.clone());
+            trunk.position.set(tx, th / 2, tz);
+            this.scene.add(trunk);
+            const leaves = new THREE.Mesh(new THREE.SphereGeometry(2.5 + Math.random() * 1.5, 7, 7), leafMat.clone());
+            leaves.position.set(tx, th + 1.5, tz);
+            this.scene.add(leaves);
+        }
+
+        // Park benches along main roads
+        const benchMat = new THREE.MeshLambertMaterial({ color: 0x6b4020 });
+        for (let i = 0; i < 40; i++) {
+            const bx = (Math.random() - 0.5) * this.worldSize * 0.7;
+            const bz = (Math.random() - 0.5) * this.worldSize * 0.7;
+            const bench = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.2, 0.5), benchMat.clone());
+            bench.position.set(bx, 0.5, bz);
+            bench.rotation.y = Math.random() * Math.PI;
+            this.scene.add(bench);
         }
     }
 
@@ -939,7 +1178,8 @@ class WorldGenerator {
     }
 
     createFog() {
-        this.scene.fog = new THREE.FogExp2(0x1a0f10, 0.004);
+        // Less dense fog for the bigger world so player can see farther
+        this.scene.fog = new THREE.FogExp2(0x1a0f10, 0.0018);
     }
 
     createPickups() {
