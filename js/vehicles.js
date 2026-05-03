@@ -7,13 +7,13 @@ class DrivableCar {
     constructor(position, scene) {
         this.scene = scene;
         this.speed = 0;
-        this.maxSpeed = 1.2;
-        this.acceleration = 0.025;
-        this.brakeForce = 0.04;
-        this.friction = 0.005;
+        this.maxSpeed = 25;         // units/sec
+        this.acceleration = 18;
+        this.brakeForce = 30;
+        this.friction = 8;
         this.steerAngle = 0;
-        this.steerSpeed = 0.035;
-        this.maxSteer = 0.04;
+        this.steerSpeed = 0.08;
+        this.maxSteer = 0.55;       // radians
         this.occupied = false;
         this.health = 100;
 
@@ -234,69 +234,87 @@ class DrivableCar {
     update(keys, delta) {
         if (!this.occupied) return;
 
-        const timeScale = delta * 60;
+        // Clamp delta to avoid huge jumps on lag spikes
+        const dt = Math.min(delta, 0.05);
 
-        // Realistic Acceleration
+        // --- Throttle / Brake / Reverse ---
         if (keys['KeyW']) {
-            this.speed += this.acceleration * timeScale;
+            this.speed += this.acceleration * dt;
         } else if (keys['KeyS']) {
-            this.speed -= this.acceleration * timeScale;
+            if (this.speed > 0.5) {
+                // Engine braking first
+                this.speed -= this.brakeForce * dt;
+            } else {
+                // Then reverse
+                this.speed -= this.acceleration * 0.55 * dt;
+            }
         }
 
-        // Braking
+        // Handbrake / Space
         if (keys['Space']) {
-            if (this.speed > 0) this.speed = Math.max(0, this.speed - this.brakeForce * timeScale);
-            else if (this.speed < 0) this.speed = Math.min(0, this.speed + this.brakeForce * timeScale);
+            if (this.speed > 0) {
+                this.speed = Math.max(0, this.speed - this.brakeForce * 1.8 * dt);
+            } else if (this.speed < 0) {
+                this.speed = Math.min(0, this.speed + this.brakeForce * 1.8 * dt);
+            }
         }
 
-        // Friction and Air Drag
-        this.speed *= Math.pow((1 - this.friction), timeScale);
-        if (Math.abs(this.speed) < 0.005 && !keys['KeyW'] && !keys['KeyS']) {
-            this.speed = 0;
+        // Natural friction / drag when no throttle
+        if (!keys['KeyW'] && !keys['KeyS'] && !keys['Space']) {
+            const frictionForce = this.friction * dt;
+            if (Math.abs(this.speed) < frictionForce) {
+                this.speed = 0;
+            } else {
+                this.speed -= Math.sign(this.speed) * frictionForce;
+            }
         }
-        this.speed = Math.max(-this.maxSpeed * 0.4, Math.min(this.maxSpeed, this.speed));
 
-        // Steering (only steers effectively when moving)
+        // Clamp to max speed
+        this.speed = Math.max(-this.maxSpeed * 0.45, Math.min(this.maxSpeed, this.speed));
+
+        // --- Steering (speed-sensitive) ---
+        const speedRatio = Math.abs(this.speed) / this.maxSpeed;
+        // Less steering authority at high speed (realistic)
+        const steerLimit = this.maxSteer * Math.max(0.25, 1 - speedRatio * 0.6);
+
         let targetSteer = 0;
-        if (keys['KeyA']) targetSteer = this.maxSteer;
-        if (keys['KeyD']) targetSteer = -this.maxSteer;
-        
-        // Smooth steering transition
-        this.steerAngle += (targetSteer - this.steerAngle) * 0.1 * timeScale;
+        if (keys['KeyA']) targetSteer =  steerLimit;
+        if (keys['KeyD']) targetSteer = -steerLimit;
 
-        // Apply movement and turning
-        if (Math.abs(this.speed) > 0.001) {
-            // Turn radius based on speed direction
-            const turnFactor = this.speed > 0 ? 1 : -1;
-            this.mesh.rotation.y += this.steerAngle * this.speed * turnFactor * 10 * delta;
+        // Smooth steering input
+        this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, 8 * dt);
+
+        // --- Yaw (turn car body) ---
+        if (Math.abs(this.speed) > 0.2) {
+            const turnDir = this.speed > 0 ? 1 : -1;
+            // Turning rate proportional to speed but capped
+            const turnRate = this.steerAngle * Math.min(1.0, Math.abs(this.speed) / 6) * turnDir;
+            this.mesh.rotation.y += turnRate * dt;
         }
 
-        const forward = new THREE.Vector3(
-            Math.sin(this.mesh.rotation.y),
-            0,
-            Math.cos(this.mesh.rotation.y)
-        );
+        // --- Move car forward along its heading ---
+        const heading = this.mesh.rotation.y;
+        this.mesh.position.x += Math.sin(heading) * this.speed * dt;
+        this.mesh.position.z += Math.cos(heading) * this.speed * dt;
+        this.mesh.position.y = 0; // keep on ground
 
-        this.mesh.position.x += forward.x * this.speed;
-        this.mesh.position.z += forward.z * this.speed;
-
-        // Wheel rotation
+        // --- Wheel spin (rotate around local X axis) ---
+        const wheelRadius = 0.4;
+        const spinRate = (this.speed * dt) / wheelRadius; // radians
         this.wheels.forEach(w => {
-            w.rotation.y += this.speed * 0.5;
+            w.rotation.y += spinRate; // wheels were built with rotation.x=PI/2 so local Y = world X
         });
 
-        // Steering wheel rotation
+        // --- Steering wheel visual ---
         if (this.steeringWheel) {
-            this.steeringWheel.rotation.z = -this.steerAngle * 40;
+            this.steeringWheel.rotation.z = -this.steerAngle * 3;
         }
 
-        // World bounds
-        const halfWorld = 195;
+        // --- World bounds ---
+        const halfWorld = 395;
         this.mesh.position.x = Math.max(-halfWorld, Math.min(halfWorld, this.mesh.position.x));
         this.mesh.position.z = Math.max(-halfWorld, Math.min(halfWorld, this.mesh.position.z));
-    }
 
-    getDriverPosition() {
         const pos = new THREE.Vector3(0, 2.5, 0);
         pos.applyQuaternion(this.mesh.quaternion);
         pos.add(this.mesh.position);
@@ -349,18 +367,29 @@ class DrivablePlane {
     constructor(position, scene) {
         this.scene = scene;
         this.isPlane = true;
+
+        // Speed in units/sec
         this.speed = 0;
-        this.maxSpeed = 2.5; 
-        this.acceleration = 0.015;
-        this.pitch = 0;
-        this.roll = 0;
+        this.maxSpeed = 120;
+        this.minFlySpeed = 35;    // must exceed this to take off
+        this.acceleration = 28;
+        this.dragCoeff = 0.18;    // aerodynamic drag
+
+        // Flight state
+        this.pitchRate = 0;       // deg/sec angular velocity
+        this.rollRate  = 0;
+        this.yawRate   = 0;
+        this.altitude  = 1.0;
+        this.onGround  = true;
+        this.liftFactor = 0.0;    // 0..1
+
         this.occupied = false;
-        
+
         this.mesh = this.buildPlane();
         this.mesh.position.copy(position);
         this.mesh.position.y = 1.0;
         scene.add(this.mesh);
-        
+
         this.interactRadius = 10;
         this.forwardVector = new THREE.Vector3(0, 0, 1);
     }
@@ -419,82 +448,121 @@ class DrivablePlane {
         return group;
     }
     
-    enter() { this.occupied = true; this.indicatorMat.opacity = 0; }
-    exit() { this.occupied = false; this.speed = 0; }
+    enter() {
+        this.occupied = true;
+        this.indicatorMat.opacity = 0;
+    }
+    exit() {
+        this.occupied = false;
+        this.speed = 0;
+        this.pitchRate = 0;
+        this.rollRate  = 0;
+        this.yawRate   = 0;
+    }
     
     update(keys, delta) {
+        const dt = Math.min(delta, 0.05);
+
         if (!this.occupied) {
-            // Fall to ground if unoccupied
+            // Passive descent when no pilot
             if (this.mesh.position.y > 1.0) {
-                 this.mesh.position.y -= 2 * delta;
-                 if (this.mesh.position.y < 1.0) {
-                     this.mesh.position.y = 1.0;
-                     this.mesh.rotation.z = 0;
-                     this.mesh.rotation.x = 0;
-                 }
+                this.mesh.position.y -= 10 * dt;
+                if (this.mesh.position.y < 1.0) {
+                    this.mesh.position.y = 1.0;
+                    // Flatten orientation
+                    const e = new THREE.Euler().setFromQuaternion(this.mesh.quaternion, 'YXZ');
+                    e.x = 0; e.z = 0;
+                    this.mesh.quaternion.setFromEuler(e);
+                }
             }
+            this.propeller.rotation.z -= this.speed * dt * 0.3;
+            this.speed = Math.max(0, this.speed - 20 * dt);
             return;
         }
-        
-        const timeScale = delta * 60;
-        
-        // Thrust (Shift to accelerate, Ctrl/Space to brake)
-        if (keys['ShiftLeft'] || keys['ShiftRight'] || keys['KeyW']) {
-            this.speed += this.acceleration * timeScale;
+
+        // ===== THRUST =====
+        const throttleOn = keys['ShiftLeft'] || keys['ShiftRight'] || keys['KeyW'];
+        if (throttleOn) {
+            this.speed += this.acceleration * dt;
         } else if (keys['Space']) {
-            this.speed -= this.acceleration * 1.5 * timeScale;
-        } else {
-            // Drag
-            this.speed *= Math.pow(0.995, timeScale);
+            // Throttle cut / spoilers
+            this.speed = Math.max(0, this.speed - this.acceleration * 2 * dt);
         }
+        // Aerodynamic drag (quadratic)
+        this.speed -= this.dragCoeff * this.speed * this.speed * dt * 0.01;
         this.speed = Math.max(0, Math.min(this.maxSpeed, this.speed));
-        
-        this.propeller.rotation.z -= this.speed * timeScale * 1.5;
 
-        // Flight controls
-        if (this.speed > 0.3) {
-            if (keys['ArrowUp']) this.pitch += 0.01 * timeScale;
-            if (keys['ArrowDown']) this.pitch -= 0.01 * timeScale;
-            if (keys['KeyA']) this.roll += 0.03 * timeScale;
-            if (keys['KeyD']) this.roll -= 0.03 * timeScale;
-            
-            // Auto level slightly
-            this.pitch *= Math.pow(0.95, timeScale);
-            this.roll *= Math.pow(0.92, timeScale);
+        // Propeller spin — proportional to speed
+        this.propeller.rotation.z -= this.speed * dt * 0.5;
 
-            // Apply rotations locally
-            this.mesh.rotateZ(this.roll * 0.03 * timeScale);
-            this.mesh.rotateX(this.pitch * 0.03 * timeScale);
-            
-            // Yaw linked to roll
-            this.mesh.rotateY(this.roll * 0.01 * timeScale);
-        } else {
-            // Ground steering
-            if (keys['KeyA']) this.mesh.rotation.y += 0.03 * timeScale;
-            if (keys['KeyD']) this.mesh.rotation.y -= 0.03 * timeScale;
-            
-            // Auto level on ground
+        // Lift factor: 0 on ground, 1 when above minFlySpeed
+        this.liftFactor = Math.min(1, Math.max(0, (this.speed - this.minFlySpeed * 0.6) / (this.minFlySpeed * 0.4)));
+        this.onGround = this.mesh.position.y <= 1.05 && this.speed < this.minFlySpeed;
+
+        // ===== FLIGHT CONTROLS =====
+        const controlAuth = this.liftFactor; // no authority at low speed
+
+        // Pitch (nose up/down) — Arrow keys or W/S when airborne
+        const pitchInput = (keys['ArrowUp'] ? 1 : 0) - (keys['ArrowDown'] ? 1 : 0);
+        this.pitchRate += pitchInput * 45 * controlAuth * dt;   // deg-like rate
+        this.pitchRate *= Math.pow(0.85, dt * 60);              // damp toward 0
+
+        // Roll (bank) — A/D keys
+        const rollInput = (keys['KeyA'] ? 1 : 0) - (keys['KeyD'] ? 1 : 0);
+        this.rollRate += rollInput * 70 * controlAuth * dt;
+        this.rollRate *= Math.pow(0.80, dt * 60);
+
+        // Coordinated turn: yaw follows roll (like a real plane)
+        const euler = new THREE.Euler().setFromQuaternion(this.mesh.quaternion, 'YXZ');
+        const currentRoll = euler.z;
+        this.yawRate = -currentRoll * this.liftFactor * 0.6; // bank to turn
+
+        // Apply angular velocities to quaternion
+        if (this.liftFactor > 0.01) {
+            this.mesh.rotateX(THREE.MathUtils.degToRad(this.pitchRate) * dt);
+            this.mesh.rotateZ(THREE.MathUtils.degToRad(this.rollRate)  * dt);
+            this.mesh.rotateY(this.yawRate * dt);
+        }
+
+        // ===== GROUND TAXI STEERING =====
+        if (this.onGround) {
+            const taxiSteer = (keys['KeyA'] ? 1 : 0) - (keys['KeyD'] ? 1 : 0);
+            this.mesh.rotation.y += taxiSteer * 0.02 * (this.speed / 10) * dt * 60;
+            // Level the aircraft while on ground
             this.mesh.quaternion.slerp(
                 new THREE.Quaternion().setFromEuler(new THREE.Euler(0, this.mesh.rotation.y, 0, 'YXZ')),
-                0.1 * timeScale
+                Math.min(1, 6 * dt)
             );
-            this.pitch = 0;
-            this.roll = 0;
         }
-        
-        // Move forward locally (+Z)
-        this.mesh.translateZ(this.speed * timeScale);
-        
-        // Ground collision
-        if(this.mesh.position.y < 1.0) {
+
+        // ===== LIFT / GRAVITY =====
+        const gravity = 20; // units/sec²
+        const lift = this.liftFactor * gravity * 1.05; // slightly more lift than gravity when flying
+
+        if (!this.onGround) {
+            // Net vertical acceleration from lift vs gravity
+            // Pitch nose up → climb, nose down → dive
+            const pitchEuler = new THREE.Euler().setFromQuaternion(this.mesh.quaternion, 'YXZ');
+            const climbFactor = -Math.sin(pitchEuler.x); // positive when nose up
+            const vertAcc = (lift - gravity) + climbFactor * this.speed * 0.4;
+            this.mesh.position.y += vertAcc * dt;
+        }
+
+        // ===== FORWARD MOVEMENT =====
+        this.mesh.translateZ(this.speed * dt);
+
+        // ===== GROUND CLAMP =====
+        if (this.mesh.position.y < 1.0) {
             this.mesh.position.y = 1.0;
-            const euler = new THREE.Euler().setFromQuaternion(this.mesh.quaternion, 'YXZ');
-            if (euler.x < 0) euler.x = 0; // Prevent nose dipping too much on ground
-            this.mesh.quaternion.setFromEuler(euler);
+            // Kill downward pitch on touchdown
+            const e = new THREE.Euler().setFromQuaternion(this.mesh.quaternion, 'YXZ');
+            if (e.x > 0) e.x = Math.max(0, e.x - 2 * dt); // gently flatten nose
+            e.z *= 0.85; // reduce roll
+            this.mesh.quaternion.setFromEuler(e);
         }
-        
-        // World bounds
-        const halfWorld = 195;
+
+        // ===== WORLD BOUNDS =====
+        const halfWorld = 395;
         this.mesh.position.x = Math.max(-halfWorld, Math.min(halfWorld, this.mesh.position.x));
         this.mesh.position.z = Math.max(-halfWorld, Math.min(halfWorld, this.mesh.position.z));
     }

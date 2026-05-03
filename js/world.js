@@ -7,7 +7,7 @@
 class WorldGenerator {
     constructor(scene) {
         this.scene = scene;
-        this.worldSize = 400;
+        this.worldSize = 800;
         this.buildings = [];
         this.pickups = [];
         this.doors = [];           // Interactive doors
@@ -202,8 +202,8 @@ class WorldGenerator {
         let enterableCount = 0;
 
         // Reduced building count for performance
-        for (let gx = -3; gx <= 3; gx++) {
-            for (let gz = -3; gz <= 3; gz++) {
+        for (let gx = -7; gx <= 7; gx++) {
+            for (let gz = -7; gz <= 7; gz++) {
                 if (Math.abs(gx) <= 1 && Math.abs(gz) <= 1) continue;
                 if (Math.random() > 0.55) continue;
 
@@ -220,6 +220,204 @@ class WorldGenerator {
                 this.createBuilding({ x, z, w, h, d, destroyed, enterable }, wallTex, destroyedTex);
             }
         }
+
+        // Add special buildings
+        this.createCafe(new THREE.Vector3(120, 0, -120), new THREE.Group());
+        this.createSportsGround(new THREE.Vector3(-150, 0, 100), new THREE.Group());
+        this.createSwimmingPool(new THREE.Vector3(100, 0, 150), new THREE.Group());
+    }
+
+    // CAFE - A commercial building with nice geometry
+    createCafe(position, group) {
+        // Main building body
+        const mainGeo = new THREE.BoxGeometry(12, 6, 10);
+        const mainMat = new THREE.MeshLambertMaterial({ color: 0xd4a574 });
+        const main = new THREE.Mesh(mainGeo, mainMat);
+        main.position.y = 3;
+        group.add(main);
+
+        // Slanted roof
+        const roofGeo = new THREE.ConeGeometry(8, 2, 4);
+        const roofMat = new THREE.MeshLambertMaterial({ color: 0x8b4513 });
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.y = 7;
+        group.add(roof);
+
+        // Front awning/canopy
+        const awningGeo = new THREE.BoxGeometry(12.5, 0.3, 2.5);
+        const awningMat = new THREE.MeshLambertMaterial({ color: 0xff6b6b });
+        const awning = new THREE.Mesh(awningGeo, awningMat);
+        awning.position.set(0, 5.5, -5.2);
+        group.add(awning);
+
+        // Support pillars for canopy
+        for (let i = -1; i <= 1; i++) {
+            const pillarGeo = new THREE.CylinderGeometry(0.3, 0.3, 3.5, 8);
+            const pillarMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
+            const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+            pillar.position.set(i * 3.5, 2, -3.5);
+            group.add(pillar);
+        }
+
+        // Large front window
+        const windowGeo = new THREE.PlaneGeometry(10, 4);
+        const glassMat = new THREE.MeshBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.6 });
+        const window = new THREE.Mesh(windowGeo, glassMat);
+        window.position.set(0, 3, -5.05);
+        group.add(window);
+
+        // Door in center of window
+        const doorGeo = new THREE.BoxGeometry(1.5, 2.8, 0.2);
+        const doorMat = new THREE.MeshLambertMaterial({ color: 0x8b4513 });
+        const door = new THREE.Mesh(doorGeo, doorMat);
+        door.position.set(0, 1.8, -5.1);
+        group.add(door);
+
+        group.position.copy(position);
+        this.scene.add(group);
+    }
+
+    // SPORTS GROUND - Open area with stadium-like structure
+    createSportsGround(position, group) {
+        // Main field base
+        const fieldGeo = new THREE.PlaneGeometry(30, 25);
+        const fieldMat = new THREE.MeshLambertMaterial({ color: 0x2d5016 });
+        const field = new THREE.Mesh(fieldGeo, fieldMat);
+        field.rotation.x = -Math.PI / 2;
+        field.position.y = 0.05;
+        group.add(field);
+
+        // Boundary lines (white stripes)
+        const lineGeo = new THREE.PlaneGeometry(30, 0.5);
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const lineN = new THREE.Mesh(lineGeo, lineMat);
+        lineN.rotation.x = -Math.PI / 2;
+        lineN.position.set(0, 0.07, -12.5);
+        group.add(lineN);
+        const lineS = new THREE.Mesh(lineGeo, lineMat.clone());
+        lineS.rotation.x = -Math.PI / 2;
+        lineS.position.set(0, 0.07, 12.5);
+        group.add(lineS);
+
+        // Center circle
+        const circleGeo = new THREE.CircleGeometry(3.5, 16);
+        const circle = new THREE.Mesh(circleGeo, lineMat.clone());
+        circle.rotation.x = -Math.PI / 2;
+        circle.position.y = 0.08;
+        group.add(circle);
+
+        // Goal boxes
+        for (let z of [-11, 11]) {
+            const goalGeo = new THREE.BoxGeometry(16, 0.2, 5);
+            const goalMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+            const goal = new THREE.Mesh(goalGeo, goalMat);
+            goal.position.set(0, 0.1, z);
+            group.add(goal);
+        }
+
+        // Spectator stands (bleachers) on sides
+        for (let x of [-16, 16]) {
+            for (let i = 0; i < 4; i++) {
+                const bleacherGeo = new THREE.BoxGeometry(2, 1 + i * 0.8, 24);
+                const bleacherMat = new THREE.MeshLambertMaterial({ color: 0x555544 });
+                const bleacher = new THREE.Mesh(bleacherGeo, bleacherMat);
+                bleacher.position.set(x + (x > 0 ? 1 : -1) * i * 1.2, 0.5 + i * 0.8, 0);
+                group.add(bleacher);
+            }
+        }
+
+        // Goal posts (simple)
+        for (let z of [-12.5, 12.5]) {
+            const postGeo = new THREE.CylinderGeometry(0.15, 0.15, 7, 8);
+            const postMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+            const post = new THREE.Mesh(postGeo, postMat);
+            post.position.set(-6, 3.5, z);
+            group.add(post);
+            const post2 = post.clone();
+            post2.position.x = 6;
+            group.add(post2);
+        }
+
+        group.position.copy(position);
+        this.scene.add(group);
+    }
+
+    // SWIMMING POOL - Olympic-style with water
+    createSwimmingPool(position, group) {
+        // Pool structure (concrete base)
+        const poolDepth = 3;
+        const poolGeo = new THREE.BoxGeometry(18, poolDepth, 12);
+        const poolBaseMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+        const poolBase = new THREE.Mesh(poolGeo, poolBaseMat);
+        poolBase.position.y = -poolDepth / 2;
+        group.add(poolBase);
+
+        // Pool water
+        const waterGeo = new THREE.PlaneGeometry(17.8, 11.8);
+        const waterMat = new THREE.MeshLambertMaterial({
+            color: 0x0066cc,
+            transparent: true,
+            opacity: 0.7
+        });
+        const water = new THREE.Mesh(waterGeo, waterMat);
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = 0.02;
+        group.add(water);
+
+        // Pool edges (white concrete)
+        const edgeThickness = 0.8;
+        const edgeGeo = new THREE.BoxGeometry(20, 0.5, edgeThickness);
+        const edgeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+        
+        const edgeN = new THREE.Mesh(edgeGeo, edgeMat);
+        edgeN.position.set(0, 0.25, -6.4);
+        group.add(edgeN);
+        
+        const edgeS = edgeN.clone();
+        edgeS.position.z = 6.4;
+        group.add(edgeS);
+
+        const edgeGeo2 = new THREE.BoxGeometry(edgeThickness, 0.5, 12.8);
+        const edgeE = new THREE.Mesh(edgeGeo2, edgeMat.clone());
+        edgeE.position.set(9.9, 0.25, 0);
+        group.add(edgeE);
+        
+        const edgeW = edgeE.clone();
+        edgeW.position.x = -9.9;
+        group.add(edgeW);
+
+        // Diving boards (two heights)
+        for (let i = 0; i < 2; i++) {
+            const boardHeight = 3 + i * 2;
+            const supportGeo = new THREE.CylinderGeometry(0.25, 0.25, boardHeight, 8);
+            const supportMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+            const support = new THREE.Mesh(supportGeo, supportMat);
+            support.position.set(-5 + i * 4, boardHeight / 2, 8);
+            group.add(support);
+
+            const boardGeo = new THREE.BoxGeometry(2.5, 0.3, 1.5);
+            const boardMat = new THREE.MeshLambertMaterial({ color: 0xcc6600 });
+            const board = new THREE.Mesh(boardGeo, boardMat);
+            board.position.set(-5 + i * 4, boardHeight, 8.5);
+            group.add(board);
+        }
+
+        // Locker house/changing rooms
+        const lockerGeo = new THREE.BoxGeometry(8, 3, 4);
+        const lockerMat = new THREE.MeshLambertMaterial({ color: 0xb0b0b0 });
+        const locker = new THREE.Mesh(lockerGeo, lockerMat);
+        locker.position.set(-8, 1.5, -7);
+        group.add(locker);
+
+        // Ladder (to help visualization)
+        const ladderGeo = new THREE.BoxGeometry(0.4, 2.5, 0.2);
+        const ladderMat = new THREE.MeshLambertMaterial({ color: 0xffaa00 });
+        const ladder = new THREE.Mesh(ladderGeo, ladderMat);
+        ladder.position.set(7, 1, 5.5);
+        group.add(ladder);
+
+        group.position.copy(position);
+        this.scene.add(group);
     }
 
     createBuilding(config, wallTex, destroyedTex) {

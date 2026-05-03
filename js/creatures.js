@@ -39,8 +39,18 @@ const CREATURE_TYPES = {
         hitRadius: 1.8,
         points: 250,
         color: 0x553322,
-        scale: 0.9
-    }
+        scale: 0.9    },
+    bird: {
+        name: 'SKY BIRD',
+        health: 15,
+        speed: 0.15,
+        damage: 0,
+        attackRange: 0,
+        attackRate: 0,
+        hitRadius: 0.8,
+        points: 50,
+        color: 0x8B4513,
+        scale: 0.6    }
 };
 
 class Creature {
@@ -74,8 +84,76 @@ class Creature {
             case 'crocodile': return this.buildCrocodile();
             case 'spider': return this.buildSpider();
             case 'serpent': return this.buildSerpent();
+            case 'bird': return this.buildBird();
             default: return this.buildCrocodile();
         }
+    }
+
+    buildBird() {
+        const group = new THREE.Group();
+        const s = this.config.scale;
+        const bodyMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+        const wingMat = new THREE.MeshLambertMaterial({ color: 0x654321 });
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const beakMat = new THREE.MeshLambertMaterial({ color: 0xFF6600 });
+
+        // Body
+        const body = new THREE.Mesh(
+            new THREE.SphereGeometry(0.3 * s, 8, 8),
+            bodyMat
+        );
+        body.scale.set(1.2, 0.8, 0.8);
+        group.add(body);
+
+        // Head
+        const head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15 * s, 8, 8),
+            bodyMat.clone()
+        );
+        head.position.set(0.35 * s, 0.1 * s, 0);
+        group.add(head);
+
+        // Eye
+        const eye = new THREE.Mesh(
+            new THREE.SphereGeometry(0.03 * s, 4, 4),
+            eyeMat
+        );
+        eye.position.set(0.45 * s, 0.15 * s, 0.08 * s);
+        group.add(eye);
+
+        // Beak
+        const beak = new THREE.Mesh(
+            new THREE.ConeGeometry(0.03 * s, 0.15 * s, 4),
+            beakMat
+        );
+        beak.position.set(0.55 * s, 0.1 * s, 0);
+        beak.rotation.z = Math.PI / 2;
+        group.add(beak);
+
+        // Wings (L & R)
+        const wingL = new THREE.Mesh(
+            new THREE.BoxGeometry(0.6 * s, 0.15 * s, 0.05 * s),
+            wingMat
+        );
+        wingL.position.set(0, 0, 0.25 * s);
+        wingL.rotation.x = 0.5;
+        group.add(wingL);
+        this.wingL = wingL;
+
+        const wingR = wingL.clone();
+        wingR.position.z = -0.25 * s;
+        group.add(wingR);
+        this.wingR = wingR;
+
+        // Tail
+        const tail = new THREE.Mesh(
+            new THREE.BoxGeometry(0.3 * s, 0.08 * s, 0.2 * s),
+            bodyMat.clone()
+        );
+        tail.position.set(-0.4 * s, -0.05 * s, 0);
+        group.add(tail);
+
+        return group;
     }
 
     buildCrocodile() {
@@ -459,6 +537,23 @@ class Creature {
                     leg.rotation.z = Math.sin(time * 3 + i) * 0.1;
                 });
             }
+        } else if (this.type === 'bird') {
+            // Wing flapping
+            if (this.wingL && this.wingR) {
+                const flapAmount = Math.sin(time * 8) * 0.5;
+                this.wingL.rotation.x = 0.5 + flapAmount;
+                this.wingR.rotation.x = 0.5 + flapAmount;
+            }
+            // Fly in circles and figure-8 patterns
+            const flightRadius = 6;
+            const flightAngle = time * 0.5;
+            const verticalBob = Math.sin(time * 1.5) * 0.5;
+            this.mesh.position.x = this.homePosition.x + Math.cos(flightAngle) * flightRadius;
+            this.mesh.position.y = 3 + verticalBob;
+            this.mesh.position.z = this.homePosition.z + Math.sin(flightAngle * 2) * flightRadius;
+            // Face flight direction
+            this.mesh.rotation.y = flightAngle;
+        }
         } else if (this.type === 'serpent') {
             // Body sway
             if (this.bodySegments) {
@@ -599,7 +694,7 @@ class CreatureManager {
     }
 
     spawnInBuilding(buildingPosition) {
-        const types = ['crocodile', 'spider', 'serpent'];
+        const types = ['crocodile', 'spider', 'serpent', 'bird', 'bird'];
         const type = types[Math.floor(Math.random() * types.length)];
         const pos = new THREE.Vector3(
             buildingPosition.x + (Math.random() - 0.5) * 4,
